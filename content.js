@@ -120,7 +120,95 @@
     }
   }
 
+  // ---------- Puffer Party (private rooms) ----------
+  // Turn-based: the answer box is enabled only on our turn. We fetch a batch of
+  // answers once per category and use the next unused one each turn.
+  const isParty = () => location.pathname.startsWith("/party");
+  const partyState = { category: "", queue: [], used: new Set(), loading: false, lastTurnKey: "" };
+
+  function partyCategory() {
+    // Skip the transient "New category" banner (.pf-newcat); read the real card.
+    const cards = document.querySelectorAll(".ds-card:not(.pf-newcat) .prompt");
+    for (const el of cards) {
+      const r = el.getBoundingClientRect();
+      const t = (el.innerText || "").trim();
+      if (r.width > 0 && t && !/^new category$/i.test(t)) return t;
+    }
+    return null;
+  }
+
+  async function partyTick() {
+    const input = document.querySelector("input.ds-input[aria-label='Your answer']");
+    const category = partyCategory();
+    if (!input || !category) return;
+
+    if (category !== partyState.category) {
+      partyState.category = category;
+      partyState.queue = [];
+      partyState.used = new Set();
+      partyState.lastTurnKey = "";
+    }
+
+    // Learn from the game's own rejections ("x": already said / no echo).
+    const rej = document.querySelector(".ds-reject");
+    if (rej) {
+      const m = (rej.innerText || "").match(/[“"](.+?)[”"]/);
+      if (m) partyState.used.add(m[1].toLowerCase());
+    }
+
+    // Only act when it is our turn (input enabled).
+    if (input.disabled) return;
+
+    if (partyState.queue.length === 0) {
+      if (partyState.loading) return;
+      partyState.loading = true;
+      try {
+        const res = await chrome.runtime.sendMessage({
+          type: "GET_KRILLION_ANSWERS",
+          mode: "party",
+          question: category,
+          avoid: [...partyState.used]
+        });
+        if (res?.ok) {
+          partyState.queue = res.answers.filter((a) => !partyState.used.has(a.toLowerCase()));
+        } else {
+          console.warn("[Krillion Party]", res?.error);
+        }
+      } catch (e) {
+        console.warn("[Krillion Party] message failed:", e);
+      } finally {
+        partyState.loading = false;
+      }
+      if (partyState.queue.length === 0 || input.disabled) return;
+    }
+
+    // One submission per attempt; wait for the game to react before the next.
+    const now = Date.now();
+    if (now - (partyState.lastSubmitAt || 0) < 900) return;
+
+    let next;
+    while ((next = partyState.queue.shift())) {
+      if (!partyState.used.has(next.toLowerCase())) break;
+    }
+    if (!next) return;
+
+    partyState.used.add(next.toLowerCase());
+    partyState.lastSubmitAt = now;
+    input.focus();
+    setNativeInputValue(input, next);
+    await new Promise((r) => setTimeout(r, 120));
+    const send = document.querySelector("button.ds-dive-btn:not([disabled])");
+    if (send) send.click();
+    else submitAnswer(input);
+  }
+
   async function evaluatePage() {
+    if (isParty()) {
+      if (!chrome.runtime?.id) return;
+      const st = await chrome.storage.local.get(["enabled"]);
+      if (st.enabled !== false) await partyTick();
+      return;
+    }
     if (isProcessing) return;
 
     // After the extension is reloaded this orphaned script must stop quietly.
