@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      width: 300px;
+      padding: 14px;
+      margin: 0;
+      background: #0b192c;
+      color: #f1f5f9;
+    }
+    h2 {
+      font-size: 15px;
+      margin: 0 0 12px;
+      color: #38bdf8;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: #94a3b8;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 9px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 12px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #0284c7;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0369a1;
+    }
+    #status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #4ade80;
+      text-align: center;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Krillion Gemini Helper</h2>
+
+  <label for="apiKey">Gemini API Key</label>
+  <input type="password" id="apiKey" placeholder="AIzaSy..." />
+
+  <label for="model">Gemini Model</label>
+  <input type="text" id="model" placeholder="gemini-3.1-flash-lite (default)" />
+
+  <div class="row">
+    <input type="checkbox" id="enabled" checked />
+    <label for="enabled" style="margin:0; color:#f1f5f9;">Enable auto-answer</label>
+  </div>
+
+  <div class="row">
+    <input type="checkbox" id="autoSubmit" checked />
+    <label for="autoSubmit" style="margin:0; color:#f1f5f9;">Auto-press Enter / Dive</label>
+  </div>
+
+  <label for="promptSelector">Custom Prompt Selector (optional)</label>
+  <input type="text" id="promptSelector" placeholder="Auto-detect if blank" />
+
+  <label for="inputSelector">Custom Input Selector (optional)</label>
+  <input type="text" id="inputSelector" placeholder="Auto-detect if blank" />
+
+  <button id="saveBtn">Save Settings</button>
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
